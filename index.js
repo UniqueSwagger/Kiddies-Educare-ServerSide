@@ -21,6 +21,32 @@ async function run() {
   try {
     await client.connect();
     const database = client.db("Kiddies_Educare");
+    const userCollection = database.collection("users");
+    //post user, get users, get particular user by emailId, replace firebase google sign in or github sign in user info, role play updating for admin, get admin by emailId
+    app
+      .post("/users", async (req, res) => {
+        const user = req.body;
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+      })
+      .get("/users", async (req, res) => {
+        const result = await userCollection.find({}).toArray();
+        res.send(result);
+      })
+      .get("/users/:emailId", async (req, res) => {
+        const result = await userCollection.findOne({
+          email: req.params.emailId,
+        });
+        res.send(result);
+      })
+      .put("/users", async (req, res) => {
+        const result = await userCollection.updateOne(
+          { email: req.body.email },
+          { $set: req.body },
+          { upsert: true }
+        );
+        res.send(result);
+      });
   } finally {
     //await client.close();
   }
