@@ -22,6 +22,7 @@ async function run() {
     await client.connect();
     const database = client.db("Kiddies_Educare");
     const userCollection = database.collection("users");
+    const eventCollection = database.collection("events");
     //post user, get users, get particular user by emailId, replace firebase google sign in or github sign in user info, role play updating for admin, get admin by emailId
     app
       .post("/users", async (req, res) => {
@@ -45,6 +46,18 @@ async function run() {
           { $set: req.body },
           { upsert: true }
         );
+        res.send(result);
+      });
+
+    //post an event, get all event
+    app
+      .post("/events", async (req, res) => {
+        const event = req.body;
+        const result = await eventCollection.insertOne(event);
+        res.send(result);
+      })
+      .get("/events", async (req, res) => {
+        const result = await eventCollection.find({}).toArray();
         res.send(result);
       });
   } finally {
