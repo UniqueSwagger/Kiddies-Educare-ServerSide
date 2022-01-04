@@ -23,6 +23,7 @@ async function run() {
     const database = client.db("Kiddies_Educare");
     const userCollection = database.collection("users");
     const eventCollection = database.collection("events");
+    const imageCollection = database.collection("gallery");
     //post user, get users, get particular user by emailId, replace firebase google sign in or github sign in user info, role play updating for admin, get admin by emailId
     app
       .post("/users", async (req, res) => {
@@ -58,6 +59,18 @@ async function run() {
       })
       .get("/events", async (req, res) => {
         const result = await eventCollection.find({}).toArray();
+        res.send(result);
+      });
+
+    //get gallery images, post gallery image
+    app
+      .get("/gallery", async (req, res) => {
+        const result = await imageCollection.find({}).toArray();
+        res.send(result);
+      })
+      .post("/gallery", async (req, res) => {
+        const galleryImage = req.body;
+        const result = await imageCollection.insertOne(galleryImage);
         res.send(result);
       });
   } finally {
