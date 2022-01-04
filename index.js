@@ -24,6 +24,7 @@ async function run() {
     const userCollection = database.collection("users");
     const eventCollection = database.collection("events");
     const imageCollection = database.collection("gallery");
+    const productCollection = database.collection("products");
     //post user, get users, get particular user by emailId, replace firebase google sign in or github sign in user info, role play updating for admin, get admin by emailId
     app
       .post("/users", async (req, res) => {
@@ -71,6 +72,18 @@ async function run() {
       .post("/gallery", async (req, res) => {
         const galleryImage = req.body;
         const result = await imageCollection.insertOne(galleryImage);
+        res.send(result);
+      });
+
+    //get products
+    app
+      .get("/products", async (req, res) => {
+        const result = await productCollection.find({}).toArray();
+        res.send(result);
+      })
+      .post("/products", async (req, res) => {
+        const product = req.body;
+        const result = await productCollection.insertOne(product);
         res.send(result);
       });
   } finally {
