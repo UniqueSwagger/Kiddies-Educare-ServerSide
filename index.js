@@ -30,6 +30,7 @@ async function run() {
     const eventCollection = database.collection("events");
     const imageCollection = database.collection("gallery");
     const productCollection = database.collection("products");
+    const orderCollection = database.collection("orders");
     //post user, get users, get particular user by emailId, replace firebase google sign in or github sign in user info, role play updating for admin, get admin by emailId
     app
       .post("/users", async (req, res) => {
@@ -95,17 +96,35 @@ async function run() {
     // payment method
     app.post("/create-payment-intent", async (req, res) => {
       // Create a PaymentIntent with the order amount and currency
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: req.body.price,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
-      console.log(paymentIntent);
-
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
+      const paymentMoney = req.body.totalAddedProductsPrice.toFixed(2);
+      if (paymentMoney) {
+        const amount = paymentMoney * 100;
+        const paymentIntent = await stripe.paymentIntents.create({
+          currency: "usd",
+          amount: amount,
+          payment_method_types: ["card"],
+        });
+        res.send({ clientSecret: paymentIntent.client_secret });
+      }
     });
+
+    //post order
+    app
+      .post("/orders", async (req, res) => {
+        const order = req.body;
+        const result = await orderCollection.insertOne(order);
+        res.send(result);
+      })
+      .get("/orders", async (req, res) => {
+        const result = await orderCollection.find({}).toArray();
+        res.send(result);
+      })
+      .get("/orders/:email", async (req, res) => {
+        const result = await orderCollection
+          .find({ email: req.params.email })
+          .toArray();
+        res.send(result);
+      });
   } finally {
     //await client.close();
   }
