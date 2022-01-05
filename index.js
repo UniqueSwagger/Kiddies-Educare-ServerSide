@@ -9,6 +9,11 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
+// stripe
+const stripe = require("stripe")(
+  "sk_test_51Jx0AjCvip3LZhpPERJsyqojcd723oPTY1FVU7OxHZwnbnqon32WOUDs1hr5P8KDkCTjTL6UQTyuuLvSADV0kX6H00lPEyq4PM"
+);
+
 app.get("/", (req, res) => res.send("Kiddies Educare Server is running"));
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.spl8q.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -86,6 +91,21 @@ async function run() {
         const result = await productCollection.insertOne(product);
         res.send(result);
       });
+
+    // payment method
+    app.post("/create-payment-intent", async (req, res) => {
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: req.body.price,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      console.log(paymentIntent);
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
   } finally {
     //await client.close();
   }
