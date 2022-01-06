@@ -14,7 +14,31 @@ const stripe = require("stripe")(
   "sk_test_51Jx0AjCvip3LZhpPERJsyqojcd723oPTY1FVU7OxHZwnbnqon32WOUDs1hr5P8KDkCTjTL6UQTyuuLvSADV0kX6H00lPEyq4PM"
 );
 
+//firebase admin configuration
+const admin = require("firebase-admin");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: serviceAccount.project_id,
+    clientEmail: serviceAccount.client_email,
+    privateKey: serviceAccount.private_key.replace(/\\n/g, "\n"),
+  }),
+});
+
 app.get("/", (req, res) => res.send("Kiddies Educare Server is running"));
+
+const verifyIdToken = async (req, res, next) => {
+  if (req?.headers?.authorization.startsWith("Bearer ")) {
+    const idToken = req.headers.authorization.split("Bearer ")[1];
+    try {
+      const decodedUser = await admin.auth().verifyIdToken(idToken);
+      req.decodedEmail = decodedUser.email;
+      next();
+    } catch (e) {
+      res.status(401).send("Unauthorized");
+    }
+  }
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.spl8q.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -119,11 +143,15 @@ async function run() {
         const result = await orderCollection.find({}).toArray();
         res.send(result);
       })
-      .get("/orders/:email", async (req, res) => {
-        const result = await orderCollection
-          .find({ email: req.params.email })
-          .toArray();
-        res.send(result);
+      .get("/orders/:email", verifyIdToken, async (req, res) => {
+        if (req.decodedEmail === req.params.email) {
+          const result = await orderCollection
+            .find({ email: req.params.email })
+            .toArray();
+          res.send(result);
+        } else {
+          res.status(401).send("Unauthorized");
+        }
       });
   } finally {
     //await client.close();
